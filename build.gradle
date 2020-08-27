@@ -42,6 +42,7 @@ dependencies {
     // https://mvnrepository.com/artifact/io.github.http-builder-ng/http-builder-ng-okhttp
     compile group: 'io.github.http-builder-ng', name: 'http-builder-ng-okhttp', version: '1.0.4'
 
+    // TODO PROJECT REQUIRES AWS LIBRARIES FOR S3 AND DYNAMODB
 
     testCompile group: 'junit', name: 'junit', version: '4.12'
     // https://mvnrepository.com/artifact/org.spockframework/spock-core
