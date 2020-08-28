@@ -42,9 +42,48 @@ dependencies {
     // https://mvnrepository.com/artifact/io.github.http-builder-ng/http-builder-ng-okhttp
     compile group: 'io.github.http-builder-ng', name: 'http-builder-ng-okhttp', version: '1.0.4'
 
-    // TODO PROJECT REQUIRES AWS LIBRARIES FOR S3 AND DYNAMODB
-
     testCompile group: 'junit', name: 'junit', version: '4.12'
+
     // https://mvnrepository.com/artifact/org.spockframework/spock-core
     testCompile group: 'org.spockframework', name: 'spock-core', version: '2.0-M2-groovy-3.0'
+}
+
+jar () {
+    archiveName = "optimus-subscriber.jar"
+    doFirst {
+        manifest {
+            attributes (
+                "Implementation-Title": "Optimus Content Subscriber",
+                "Implementation-Version": "${version}",
+                "Build-Date": new Date().format("MM/dd/yyyy HH:mm aa"),
+                "Main-Class": "org.cisecurity.content.Application",
+                "Class-Path": configurations.compile.collect { "lib/${it.getName()}" }.join(' ')
+            )
+        }
+    }
+}
+
+assemble {
+    doLast {
+        configurations.compile.collect().each { c ->
+            ant.copy(toDir: "./release/lib", verbose: true) {
+                fileset(file: c.canonicalPath)
+            }
+        }
+
+        copy {
+            from ("./build/libs") {
+                include "optimus-subscriber.jar"
+            }
+            into "./release"
+        }
+
+        copy {
+            from (".") {
+                include "OptimusSubscriber.bat"
+                include "OptimusSubscriber.sh"
+            }
+            into "./release"
+        }
+    }
 }

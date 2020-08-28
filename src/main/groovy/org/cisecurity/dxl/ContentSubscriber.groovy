@@ -4,13 +4,13 @@ import groovy.json.JsonSlurper
 import groovyx.net.http.FromServer
 import groovyx.net.http.HttpBuilder
 import groovyx.net.http.optional.Download
-
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
 import static groovyx.net.http.util.SslUtils.ignoreSslIssues
 
 class ContentSubscriber {
-	final Logger log = Logger.getLogger(ContentSubscriber.class.getName())
+	final Logger log = LoggerFactory.getLogger(ContentSubscriber.class)
 
 	protected String downloadCategory
 
@@ -63,10 +63,11 @@ class ContentSubscriber {
 				Download.toFile(delegate, downloadFile)
 
 				response.success { FromServer fs, Object body ->
+					System.console().println "Received ${downloadCategory} content: ${payloadFilename} "
 					" - Content successfully downloaded to ${downloadFilepath}"
 				}
 				response.failure { FromServer fs, Object body ->
-					" - Content UN-successfully downloaded: ${fs.statusCode}/${fs.message}"
+					" - Content FAILED to download: ${fs.statusCode}/${fs.message}"
 				}
 //            response.when(200) { FromServer fs ->
 //                " - Content successfully downloaded to ${downloadFilepath}"

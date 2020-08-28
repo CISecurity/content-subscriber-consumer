@@ -11,13 +11,12 @@ import com.opendxl.client.message.Event
 import com.opendxl.client.message.Message
 import com.opendxl.client.message.Request
 import com.opendxl.client.message.Response
-
-import java.util.logging.Level
-import java.util.logging.Logger
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 
 @Singleton
 class DxlUtilities {
-	final Logger log = Logger.getLogger(DxlUtilities.class.getName())
+	final Logger log = LoggerFactory.getLogger(DxlUtilities.class)
 
 	/**
 	 * Keep an easily accessible reference to the CIS fabric
@@ -52,6 +51,9 @@ class DxlUtilities {
 
 					// Obtain the DXL Client to the CIS fabric.
 					initialized = connectDxlClient(dxlclientConfig)
+					if (initialized) {
+						System.console().println "Connected to Communication Fabric."
+					}
 
 					log.info "[ END ] - CIS DXL Client [initialized = ${initialized}]"
 				}
@@ -93,7 +95,7 @@ class DxlUtilities {
 			return dxlClient.isConnected()
 
 		} catch (DxlException de) {
-			log.log(Level.INFO, "DXL Exception", de)
+			log.error "DXL Exception", de
 			return false
 		}
 	}
@@ -155,7 +157,7 @@ class DxlUtilities {
 					log.info " Topic is ${pingResult ? "" : "NOT "}listening."
 					return pingResult
 				} catch (DxlException dxlException) {
-					log.log(Level.WARNING, "Exception thrown PINGing topic ${topic}; Timeout?", dxlException)
+					log.error "Exception thrown PINGing topic ${topic}; Timeout?", dxlException
 					return false
 				}
 			} else {
@@ -215,10 +217,10 @@ class DxlUtilities {
 //			return responseTypeError
 //		} else {
 //			if (isFabricConnected()) {
-//				log.warning "[ERROR] The service listening on topic: '${topic}' is unavailable; Unable to make request."
+//				log.error "[ERROR] The service listening on topic: '${topic}' is unavailable; Unable to make request."
 //			} else {
 //				// TODO: Fabric is not connected.  Fashion an ErrorResponse
-//				log.warning "[ERROR] The fabric is not connected; Unable to make request on topic: '${topic}'"
+//				log.error "[ERROR] The fabric is not connected; Unable to make request on topic: '${topic}'"
 //			}
 //			return true
 //		}
@@ -254,10 +256,10 @@ class DxlUtilities {
 
 		} else {
 			if (isFabricConnected()) {
-				log.warning "[ERROR] The service listening on topic: '${topic}' is unavailable; Unable to make request."
+				log.error "[ERROR] The service listening on topic: '${topic}' is unavailable; Unable to make request."
 			} else {
 				// TODO: Fabric is not connected.  Fashion an ErrorResponse
-				log.warning "[ERROR] The fabric is not connected; Unable to make request on topic: '${topic}'"
+				log.error "[ERROR] The fabric is not connected; Unable to make request on topic: '${topic}'"
 			}
 		}
 	}
@@ -279,7 +281,7 @@ class DxlUtilities {
 			log.info "[ END ] Event Published to Topic --> ${topic}"
 		} else {
 			// TODO: Fabric is not connected.
-			log.warning "[ERROR] FABRIC IS NOT CONNECTED; UNABLE TO PUBLISH PAYLOAD"
+			log.error "[ERROR] FABRIC IS NOT CONNECTED; UNABLE TO PUBLISH PAYLOAD"
 		}
 	}
 
@@ -295,7 +297,7 @@ class DxlUtilities {
 			dxlClient.addEventCallback(topic, eventCallback, subscribe)
 			log.info "[ END ] Adding subscription callback to topic: ${topic}"
 		} else {
-			log.warning "Cannot add event callback to topic ${topic}; Fabric NOT CONNECTED"
+			log.error "Cannot add event callback to topic ${topic}; Fabric NOT CONNECTED"
 		}
 	}
 
@@ -310,8 +312,8 @@ class DxlUtilities {
 			dxlClient.subscribe(topic)
 			log.info "[ END ] Adding subscription to topic: ${topic}"
 		} else {
-			log.warning "The application IS NOT connected to the fabric; "
-			log.warning "Subscription to topic ${topic} is unavailable."
+			log.error "The application IS NOT connected to the fabric; "
+			log.error "Subscription to topic ${topic} is unavailable."
 		}
 	}
 
@@ -326,8 +328,8 @@ class DxlUtilities {
 			dxlClient.unsubscribe(topic)
 			log.info "[ END ] Removing subscription to topic: ${topic}"
 		} else {
-			log.warning "The application IS NOT connected to the fabric; "
-			log.warning "Unsubscription from topic ${topic} is unavailable."
+			log.error "The application IS NOT connected to the fabric; "
+			log.error "Unsubscription from topic ${topic} is unavailable."
 		}
 	}
 
@@ -342,8 +344,8 @@ class DxlUtilities {
 			dxlClient.sendResponse(response)
 			log.info "[ END ] Sending response to topic: ${response.request.destinationTopic}"
 		} else {
-			log.warning "The application IS NOT connected to the fabric; "
-			log.warning "Sending response to topic ${response.request.destinationTopic} is unavailable."
+			log.error "The application IS NOT connected to the fabric; "
+			log.error "Sending response to topic ${response.request.destinationTopic} is unavailable."
 		}
 	}
 
@@ -377,8 +379,8 @@ class DxlUtilities {
 
 			serviceRegistrations[topic] = info
 		} else {
-			log.warning "The application IS NOT connected to the fabric; "
-			log.warning "Service registration is unavailable."
+			log.error "The application IS NOT connected to the fabric; "
+			log.error "Service registration is unavailable."
 		}
 	}
 }
