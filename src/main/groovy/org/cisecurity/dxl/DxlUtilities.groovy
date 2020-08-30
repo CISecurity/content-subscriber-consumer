@@ -104,7 +104,9 @@ class DxlUtilities {
 	 * Disconnect the DXL client
 	 */
 	def disconnect() {
-		dxlClient.close()
+		if (dxlClient && dxlClient.isConnected()) {
+			dxlClient.close()
+		}
 	}
 
 	/**

@@ -111,47 +111,53 @@ class Application {
 		// Connect the fabric
 		DxlUtilities.instance.initialize(cfg)
 
-		final String OPTIMUS_BENCHMARKS_SCAP_SIGNED = "/optimus/benchmarks/scap/signed"
-		final String OPTIMUS_BENCHMARKS_JSON_SIGNED = "/optimus/benchmarks/json/signed"
-		final String OPTIMUS_BENCHMARKS_YAML_SIGNED = "/optimus/benchmarks/yaml/signed"
-		final String OPTIMUS_BENCHMARKS_XCAE_SIGNED = "/optimus/benchmarks/xccdfae/signed"
+		if (DxlUtilities.instance.isFabricConnected()) {
+
+			final String OPTIMUS_BENCHMARKS_SCAP_SIGNED = "/optimus/benchmarks/scap/signed"
+			final String OPTIMUS_BENCHMARKS_JSON_SIGNED = "/optimus/benchmarks/json/signed"
+			final String OPTIMUS_BENCHMARKS_YAML_SIGNED = "/optimus/benchmarks/yaml/signed"
+			final String OPTIMUS_BENCHMARKS_XCAE_SIGNED = "/optimus/benchmarks/xccdfae/signed"
 
 
-		// Register the subscriptions
-		DxlUtilities.instance
-			.registerSubscriptionCallback(
-				OPTIMUS_BENCHMARKS_SCAP_SIGNED,             // Topic
-				new ContentSubscriberEventListener("SCAP"), // Event Handler/Listener
-				true)                                       // Auto-subscribe
+			// Register the subscriptions
+			DxlUtilities.instance
+				.registerSubscriptionCallback(
+					OPTIMUS_BENCHMARKS_SCAP_SIGNED,             // Topic
+					new ContentSubscriberEventListener("SCAP"), // Event Handler/Listener
+					true)                                       // Auto-subscribe
 
-		DxlUtilities.instance
-			.registerSubscriptionCallback(
-				OPTIMUS_BENCHMARKS_YAML_SIGNED,             // Topic
-				new ContentSubscriberEventListener("YAML"), // Event Handler/Listener
-				true)                                       // Auto-subscribe
+			DxlUtilities.instance
+				.registerSubscriptionCallback(
+					OPTIMUS_BENCHMARKS_YAML_SIGNED,             // Topic
+					new ContentSubscriberEventListener("YAML"), // Event Handler/Listener
+					true)                                       // Auto-subscribe
 
-		DxlUtilities.instance
-			.registerSubscriptionCallback(
-				OPTIMUS_BENCHMARKS_JSON_SIGNED,             // Topic
-				new ContentSubscriberEventListener("JSON"), // Event Handler/Listener
-				true)                                       // Auto-subscribe
+			DxlUtilities.instance
+				.registerSubscriptionCallback(
+					OPTIMUS_BENCHMARKS_JSON_SIGNED,             // Topic
+					new ContentSubscriberEventListener("JSON"), // Event Handler/Listener
+					true)                                       // Auto-subscribe
 
-		DxlUtilities.instance
-			.registerSubscriptionCallback(
-				OPTIMUS_BENCHMARKS_XCAE_SIGNED,                 // Topic
-				new ContentSubscriberEventListener("XCCDF-AE"), // Event Handler/Listener
-				true)                                           // Auto-subscribe
+			DxlUtilities.instance
+				.registerSubscriptionCallback(
+					OPTIMUS_BENCHMARKS_XCAE_SIGNED,                 // Topic
+					new ContentSubscriberEventListener("XCCDF-AE"), // Event Handler/Listener
+					true)                                           // Auto-subscribe
 
 
-		System.console().println "Application is subscribed to the following topics:"
-		System.console().println " - ${OPTIMUS_BENCHMARKS_SCAP_SIGNED}"
-		System.console().println " - ${OPTIMUS_BENCHMARKS_JSON_SIGNED}"
-		System.console().println " - ${OPTIMUS_BENCHMARKS_YAML_SIGNED}"
-		System.console().println " - ${OPTIMUS_BENCHMARKS_XCAE_SIGNED}"
-		System.console().println "----------------------------------------------------------------------------------------------------------------------------------------------------"
-		System.console().println "Application is listening.  Press Ctrl+C to stop the Application."
-		System.console().println "----------------------------------------------------------------------------------------------------------------------------------------------------"
+			System.console().println "Application is subscribed to the following topics:"
+			System.console().println " - ${OPTIMUS_BENCHMARKS_SCAP_SIGNED}"
+			System.console().println " - ${OPTIMUS_BENCHMARKS_JSON_SIGNED}"
+			System.console().println " - ${OPTIMUS_BENCHMARKS_YAML_SIGNED}"
+			System.console().println " - ${OPTIMUS_BENCHMARKS_XCAE_SIGNED}"
+			System.console().println "----------------------------------------------------------------------------------------------------------------------------------------------------"
+			System.console().println "Application is listening.  Press Ctrl+C to stop the Application."
+			System.console().println "----------------------------------------------------------------------------------------------------------------------------------------------------"
 
-		while(true) { /* listen */ }
+			while (true) { /* listen */
+			}
+		} else {
+			System.console().println "Application is NOT connected to the fabric; Cannot listen for events; Exiting."
+		}
 	}
 }
