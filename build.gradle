@@ -52,7 +52,7 @@ dependencies {
 }
 
 jar () {
-    archiveName = "optimus-subscriber.jar"
+    archiveFileName = "optimus-subscriber.jar"
     doFirst {
         manifest {
             attributes (
@@ -88,5 +88,12 @@ assemble {
             }
             into "./release"
         }
+
+        println "Zipping output bundle..."
+
+        // Zip the output folder
+        ant.zip(destfile: "./dist/optimus-subscriber-v${version}.zip",
+            basedir: "./release",
+            includes: "*/**")
     }
 }

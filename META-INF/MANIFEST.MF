@@ -1,0 +1,17 @@
+Manifest-Version: 1.0
+Main-Class: org.cisecurity.content.Application
+Class-Path: lib/commons-lang3-3.8.1.jar lib/okhttp-3.5.0.jar lib/commons
+ -cli-1.4.jar lib/json-simple-1.1.1.jar lib/bcpkix-jdk15on-1.60.jar lib/
+ bcprov-jdk15on-1.60.jar lib/okhttp-digest-1.10.jar lib/picocli-4.4.0.ja
+ r lib/jackson-core-2.9.7.jar lib/httpclient-4.5.6.jar lib/http-builder-
+ ng-okhttp-1.0.4.jar lib/javassist-3.16.1-GA.jar lib/okio-1.11.0.jar lib
+ /hamcrest-core-1.1.jar lib/log4j-1.2.17.jar lib/groovy-3.0.5.jar lib/co
+ mmons-logging-1.2.jar lib/msgpack-0.6.7.jar lib/commons-io-2.4.jar lib/
+ jackson-databind-2.9.7.jar lib/groovy-cli-commons-3.0.5.jar lib/groovy-
+ cli-picocli-3.0.5.jar lib/slf4j-api-1.7.28.jar lib/junit-4.10.jar lib/x
+ ml-resolver-1.2.jar lib/groovy-json-3.0.5.jar lib/commons-codec-1.10.ja
+ r lib/groovy-dateutil-3.0.5.jar lib/groovy-xml-3.0.5.jar lib/http-build
+ er-ng-core-1.0.4.jar lib/dxlclient-0.2.5.jar lib/logback-core-1.2.3.jar
+  lib/httpcore-4.4.10.jar lib/logback-classic-1.2.3.jar lib/jackson-anno
+ tations-2.9.7.jar
+
