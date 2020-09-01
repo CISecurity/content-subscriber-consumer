@@ -26,8 +26,9 @@ class Application {
 		// Allow for the user to stop the application via Ctrl+C or a SIGINT
 		addShutdownHook {
 			System.console().println ""
-			System.console().println "Shutting Down..."
+			System.console().println "Shutting Down the Application:"
 			DxlUtilities.instance.disconnect()
+			System.console().println "Application Shut Down."
 		}
 
 		new Application().start(args)
@@ -119,7 +120,7 @@ class Application {
 		DxlUtilities.instance.initialize(cfg, key)
 
 		if (DxlUtilities.instance.isFabricConnected()) {
-			boolean verified = DxlUtilities.instance.verifyLicense()
+			boolean verified = DxlUtilities.instance.verifyLicense(true)
 
 			if (verified) {
 				final String OPTIMUS_BENCHMARKS_SCAP_SIGNED = "/optimus/benchmarks/scap/signed"

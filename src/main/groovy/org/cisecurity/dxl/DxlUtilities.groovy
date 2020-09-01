@@ -13,9 +13,15 @@ import com.opendxl.client.message.Message
 import com.opendxl.client.message.Request
 import com.opendxl.client.message.Response
 import groovy.json.JsonSlurper
+import org.quartz.JobBuilder
+import org.quartz.JobDetail
+import org.quartz.Scheduler
+import org.quartz.SimpleScheduleBuilder
+import org.quartz.Trigger
+import org.quartz.TriggerBuilder
+import org.quartz.impl.StdSchedulerFactory
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import groovy.xml.XmlParser
 
 @Singleton
 class DxlUtilities {
@@ -30,15 +36,25 @@ class DxlUtilities {
 	private String dxlclientConfig = [
 		System.properties["user.dir"], "dxl", "config", "dxlclient.config"].join(File.separator)
 	private String memberKeyXml = [
-		System.properties["user.dir"], "dxl", "securesuite-member-key.xml"].join(File.separator)
+		System.properties["user.dir"], "dxl", "license.xml"].join(File.separator)
 	private final long TIMEOUT = 5 * 1000 // 5sec
 
+	private Scheduler scheduler
+	private boolean memberKeyVerified = false
 
 	/**
 	 * Getter
 	 */
 	String getDxlClientConfig() {
 		return dxlclientConfig
+	}
+
+	/**
+	 * Getter
+	 * @return
+	 */
+	boolean isMemberKeyVerified() {
+		return memberKeyVerified
 	}
 
 	/**
@@ -61,6 +77,25 @@ class DxlUtilities {
 					initialized = connectDxlClient(dxlclientConfig)
 					if (initialized) {
 						System.console().println "Connected to Communication Fabric."
+
+						// Initialize the scheduler and configure the license verification job
+						scheduler = StdSchedulerFactory.getDefaultScheduler()
+						scheduler.start()
+
+						// Verify the member key every hour.
+						JobDetail jobDetail =
+							JobBuilder.newJob(MemberKeyVerifier.class)
+								.withIdentity("memberKeyVerifier")
+								.build()
+						Trigger minTrigger =
+							TriggerBuilder.newTrigger()
+								.withIdentity("memberKeyTrigger")
+								.withSchedule(
+									SimpleScheduleBuilder.simpleSchedule()
+										.withIntervalInHours(1)
+										.repeatForever())
+								.build()
+						scheduler.scheduleJob(jobDetail, minTrigger)
 					}
 
 					log.info "[ END ] - CIS DXL Client [initialized = ${initialized}]"
@@ -113,8 +148,12 @@ class DxlUtilities {
 	 */
 	def disconnect() {
 		if (dxlClient && dxlClient.isConnected()) {
-			System.console().println "Disconnecting from Communication Fabric"
+			System.console().println "- Disconnecting from Communication Fabric"
 			dxlClient.close()
+		}
+		if (scheduler) {
+			System.console().println "- Shutting Down the Scheduler"
+			scheduler.shutdown()
 		}
 	}
 
@@ -395,13 +434,11 @@ class DxlUtilities {
 		}
 	}
 
-	def verifyLicense() {
+	def verifyLicense(boolean writeToConsole = false) {
 		final String LICENSE_TOPIC = "/cis/member/license/verification"
 		def verificationResult
 
 		log.info "[START] Initiating Member Key Verification Request via DXL"
-		boolean verified = false
-
 		def memberKeyPayload = {
 			File memberKeyFile = new File(memberKeyXml)
 			if (memberKeyFile.exists()) {
@@ -428,20 +465,28 @@ class DxlUtilities {
 			log.info "Member Key Verification: UUID=${verificationResult."UUID"}; Valid=${verificationResult."license-key-valid"}; Msg=${verificationResult."error-message" ?: "No Error Msg."}"
 
 			if (verificationResult."license-key-valid" == "true") {
-				System.console().println "SecureSuite Member Key is VALID"
-				verified = true
+				writeLine "SecureSuite Member Key is VALID", writeToConsole
+				memberKeyVerified = true
 			} else {
-				System.console().println "SecureSuite Member Key is INVALID"
-				System.console().println "- Error Msg: ${verificationResult."error-message" ?: "Invalid Member Key."}"
+				writeLine "SecureSuite Member Key is INVALID", writeToConsole
+				writeLine "- Error Msg: ${verificationResult."error-message" ?: "Invalid Member Key."}", writeToConsole
 			}
 		} else {
 			ErrorResponse er = ((ErrorResponse) response)
 			log.info "(Response) Error Code: ${er.errorCode}; Message: ${er.getErrorMessage()}"
 
-			System.console().println "SecureSuite Member Key is INVALID"
-			System.console().println "- Error Code: ${er.errorCode}"
-			System.console().println "- Error Msg: ${er.getErrorMessage()}"
+			writeLine "SecureSuite Member Key is INVALID", writeToConsole
+			writeLine "- Error Code: ${er.errorCode}", writeToConsole
+			writeLine "- Error Msg: ${er.getErrorMessage()}", writeToConsole
 		}
-		return verified
+		return memberKeyVerified
+	}
+
+	def writeLine(String line, boolean writeToConsole) {
+		if (writeToConsole) {
+			System.console().println line
+		} else {
+			log.info line
+		}
 	}
 }
