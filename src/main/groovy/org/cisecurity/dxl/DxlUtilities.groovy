@@ -7,12 +7,15 @@ import com.opendxl.client.callback.EventCallback
 import com.opendxl.client.callback.RequestCallback
 import com.opendxl.client.callback.ResponseCallback
 import com.opendxl.client.exception.DxlException
+import com.opendxl.client.message.ErrorResponse
 import com.opendxl.client.message.Event
 import com.opendxl.client.message.Message
 import com.opendxl.client.message.Request
 import com.opendxl.client.message.Response
+import groovy.json.JsonSlurper
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import groovy.xml.XmlParser
 
 @Singleton
 class DxlUtilities {
@@ -26,6 +29,8 @@ class DxlUtilities {
 	private synchronized boolean initialized = false
 	private String dxlclientConfig = [
 		System.properties["user.dir"], "dxl", "config", "dxlclient.config"].join(File.separator)
+	private String memberKeyXml = [
+		System.properties["user.dir"], "dxl", "securesuite-member-key.xml"].join(File.separator)
 	private final long TIMEOUT = 5 * 1000 // 5sec
 
 
@@ -39,7 +44,7 @@ class DxlUtilities {
 	/**
 	 * Configure the default connection to the CIS fabric
 	 */
-	def initialize(String customDxlClientConfig = null) {
+	def initialize(String customDxlClientConfig = null, String customMemberKey = null) {
 		if (!initialized) {
 			synchronized (DxlUtilities.class) {
 				if (!initialized) {
@@ -47,6 +52,9 @@ class DxlUtilities {
 
 					if (customDxlClientConfig) {
 						dxlclientConfig = customDxlClientConfig
+					}
+					if (customMemberKey) {
+						memberKeyXml = customMemberKey
 					}
 
 					// Obtain the DXL Client to the CIS fabric.
@@ -105,6 +113,7 @@ class DxlUtilities {
 	 */
 	def disconnect() {
 		if (dxlClient && dxlClient.isConnected()) {
+			System.console().println "Disconnecting from Communication Fabric"
 			dxlClient.close()
 		}
 	}
@@ -384,5 +393,55 @@ class DxlUtilities {
 			log.error "The application IS NOT connected to the fabric; "
 			log.error "Service registration is unavailable."
 		}
+	}
+
+	def verifyLicense() {
+		final String LICENSE_TOPIC = "/cis/member/license/verification"
+		def verificationResult
+
+		log.info "[START] Initiating Member Key Verification Request via DXL"
+		boolean verified = false
+
+		def memberKeyPayload = {
+			File memberKeyFile = new File(memberKeyXml)
+			if (memberKeyFile.exists()) {
+				return memberKeyFile.text
+			} else {
+				return "<securesuite_member_license><no_license_file/></securesuite_member_license>"
+			}
+		}.call()
+
+		// Create the request message
+		final Request req = new Request(LICENSE_TOPIC)
+
+		// Populate the request payload
+		req.setPayload(memberKeyPayload.getBytes(Message.CHARSET_UTF8))
+
+		log.info "Invoking member key verification request"
+
+		// Send the request
+		Response response = dxlClient.syncRequest(req)
+		if (response.getMessageType() != Message.MESSAGE_TYPE_ERROR) {
+			def payloadString = new String(response.payload)
+			verificationResult = new JsonSlurper().parseText(payloadString)
+
+			log.info "Member Key Verification: UUID=${verificationResult."UUID"}; Valid=${verificationResult."license-key-valid"}; Msg=${verificationResult."error-message" ?: "No Error Msg."}"
+
+			if (verificationResult."license-key-valid" == "true") {
+				System.console().println "SecureSuite Member Key is VALID"
+				verified = true
+			} else {
+				System.console().println "SecureSuite Member Key is INVALID"
+				System.console().println "- Error Msg: ${verificationResult."error-message" ?: "Invalid Member Key."}"
+			}
+		} else {
+			ErrorResponse er = ((ErrorResponse) response)
+			log.info "(Response) Error Code: ${er.errorCode}; Message: ${er.getErrorMessage()}"
+
+			System.console().println "SecureSuite Member Key is INVALID"
+			System.console().println "- Error Code: ${er.errorCode}"
+			System.console().println "- Error Msg: ${er.getErrorMessage()}"
+		}
+		return verified
 	}
 }

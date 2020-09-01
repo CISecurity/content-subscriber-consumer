@@ -39,6 +39,11 @@ class Application {
 	void initialize() {
 		cli.with {
 			c  longOpt: "config", type: String, "Custom path to the dxlclient.config file"
+			k  longOpt: "key", type: String, "Custom path to SecureSuite member key file"
+			s  longOpt: "scap", "Subscribe to SCAP content feed"
+			y  longOpt: "yaml", "Subscribe to YAML content feed"
+			j  longOpt: "json", "Subscribe to JSON content feed"
+			x  longOpt: "xccdf", "Subscribe to XCCDF+AE content feed"
 			h  longOpt: 'help', 'Show usage information'
 		}
 
@@ -81,69 +86,98 @@ class Application {
 			}
 		}.call()
 
+		def key = {
+			if (options.hasOption("k")) {
+				File memberKey = new File(options.k)
+				if (!memberKey.exists()) {
+					log.error "CIS member key does not exist at ${options.k}; Exiting."
+					System.exit(1)
+				} else {
+					return memberKey.canonicalPath
+				}
+			} else {
+				return null
+			}
+		}.call()
+
 		def banner = """
 ------------------------------------------------------------
-   ____        __                                    
-  / __ \\____  / /_()____ ___  __  _______            
- / / / / __ \\/ __/ / __ `__ \\/ / / / ___/            
-/ /_/ / /_/ / /_/ / / / / / / /_/ (__  )             
-\\____/ .___/\\__/_/_/ /_/ /_/\\__,_/____/              
-   _/_/_       __                     __             
-  / ___/__  __/ /_  _______________()/ /_  ___  _____
+   ______            __             __               
+  / ____/___  ____  / /____  ____  / /_              
+ / /   / __ \\/ __ \\/ __/ _ \\/ __ \\/ __/              
+/ /___/ /_/ / / / / /_/  __/ / / / /_                
+\\____/\\____/_/ /_/\\__/\\___/_/ /_/\\__/ __             
+  / ___/__  __/ /_  _______________(_) /_  ___  _____
   \\__ \\/ / / / __ \\/ ___/ ___/ ___/ / __ \\/ _ \\/ ___/
- ___/ / /_/ / /_/ (__  / /__/ /  / / /_/ /  __/ /    
+ ___/ / /_/ / /_/ (__  ) /__/ /  / / /_/ /  __/ /    
 /____/\\__,_/_.___/____/\\___/_/  /_/_.___/\\___/_/     
 ------------------------------------------------------------
 		"""
 		System.console().println banner
 
 		// Connect the fabric
-		DxlUtilities.instance.initialize(cfg)
+		DxlUtilities.instance.initialize(cfg, key)
 
 		if (DxlUtilities.instance.isFabricConnected()) {
+			boolean verified = DxlUtilities.instance.verifyLicense()
 
-			final String OPTIMUS_BENCHMARKS_SCAP_SIGNED = "/optimus/benchmarks/scap/signed"
-			final String OPTIMUS_BENCHMARKS_JSON_SIGNED = "/optimus/benchmarks/json/signed"
-			final String OPTIMUS_BENCHMARKS_YAML_SIGNED = "/optimus/benchmarks/yaml/signed"
-			final String OPTIMUS_BENCHMARKS_XCAE_SIGNED = "/optimus/benchmarks/xccdfae/signed"
+			if (verified) {
+				final String OPTIMUS_BENCHMARKS_SCAP_SIGNED = "/optimus/benchmarks/scap/signed"
+				final String OPTIMUS_BENCHMARKS_JSON_SIGNED = "/optimus/benchmarks/json/signed"
+				final String OPTIMUS_BENCHMARKS_YAML_SIGNED = "/optimus/benchmarks/yaml/signed"
+				final String OPTIMUS_BENCHMARKS_XCAE_SIGNED = "/optimus/benchmarks/xccdfae/signed"
 
+				if (options.s || options.y || options.j || options.x) {
+					System.console().println ""
+					System.console().println "Application is subscribing to the following topics:"
 
-			// Register the subscriptions
-			DxlUtilities.instance
-				.registerSubscriptionCallback(
-					OPTIMUS_BENCHMARKS_SCAP_SIGNED,             // Topic
-					new ContentSubscriberEventListener("SCAP"), // Event Handler/Listener
-					true)                                       // Auto-subscribe
+					// Register the subscriptions
+					if (options.s) {
+						System.console().println " - ${OPTIMUS_BENCHMARKS_SCAP_SIGNED}"
+						DxlUtilities.instance
+							.registerSubscriptionCallback(
+								OPTIMUS_BENCHMARKS_SCAP_SIGNED,             // Topic
+								new ContentSubscriberEventListener("SCAP"), // Event Handler/Listener
+								true)                                       // Auto-subscribe
+					}
 
-			DxlUtilities.instance
-				.registerSubscriptionCallback(
-					OPTIMUS_BENCHMARKS_YAML_SIGNED,             // Topic
-					new ContentSubscriberEventListener("YAML"), // Event Handler/Listener
-					true)                                       // Auto-subscribe
+					if (options.y) {
+						System.console().println " - ${OPTIMUS_BENCHMARKS_YAML_SIGNED}"
+						DxlUtilities.instance
+							.registerSubscriptionCallback(
+								OPTIMUS_BENCHMARKS_YAML_SIGNED,             // Topic
+								new ContentSubscriberEventListener("YAML"), // Event Handler/Listener
+								true)                                       // Auto-subscribe
+					}
 
-			DxlUtilities.instance
-				.registerSubscriptionCallback(
-					OPTIMUS_BENCHMARKS_JSON_SIGNED,             // Topic
-					new ContentSubscriberEventListener("JSON"), // Event Handler/Listener
-					true)                                       // Auto-subscribe
+					if (options.j) {
+						System.console().println " - ${OPTIMUS_BENCHMARKS_JSON_SIGNED}"
+						DxlUtilities.instance
+							.registerSubscriptionCallback(
+								OPTIMUS_BENCHMARKS_JSON_SIGNED,             // Topic
+								new ContentSubscriberEventListener("JSON"), // Event Handler/Listener
+								true)                                       // Auto-subscribe
+					}
 
-			DxlUtilities.instance
-				.registerSubscriptionCallback(
-					OPTIMUS_BENCHMARKS_XCAE_SIGNED,                 // Topic
-					new ContentSubscriberEventListener("XCCDF-AE"), // Event Handler/Listener
-					true)                                           // Auto-subscribe
+					if (options.x) {
+						System.console().println " - ${OPTIMUS_BENCHMARKS_XCAE_SIGNED}"
+						DxlUtilities.instance
+							.registerSubscriptionCallback(
+								OPTIMUS_BENCHMARKS_XCAE_SIGNED,                 // Topic
+								new ContentSubscriberEventListener("XCCDF-AE"), // Event Handler/Listener
+								true)                                           // Auto-subscribe
+					}
 
+					System.console().println "--------------------------------------------------------------------"
+					System.console().println "Application is listening.  Press Ctrl+C to stop the Application."
+					System.console().println "--------------------------------------------------------------------"
 
-			System.console().println "Application is subscribed to the following topics:"
-			System.console().println " - ${OPTIMUS_BENCHMARKS_SCAP_SIGNED}"
-			System.console().println " - ${OPTIMUS_BENCHMARKS_JSON_SIGNED}"
-			System.console().println " - ${OPTIMUS_BENCHMARKS_YAML_SIGNED}"
-			System.console().println " - ${OPTIMUS_BENCHMARKS_XCAE_SIGNED}"
-			System.console().println "----------------------------------------------------------------------------------------------------------------------------------------------------"
-			System.console().println "Application is listening.  Press Ctrl+C to stop the Application."
-			System.console().println "----------------------------------------------------------------------------------------------------------------------------------------------------"
-
-			while (true) { /* listen */
+					while (true) {} /* listen */
+				} else {
+					System.console().println "Application was not configured to listen for content; Exiting."
+				}
+			} else {
+				System.console().println "Application does NOT possess a valid CIS SecureSuite Member Key; Exiting."
 			}
 		} else {
 			System.console().println "Application is NOT connected to the fabric; Cannot listen for events; Exiting."

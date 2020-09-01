@@ -41,34 +41,37 @@ class ContentSubscriber {
 		try {
 			def json = new JsonSlurper().parseText(payloadString)
 			def payloadFilename = json.benchmark."benchmark_filename"
-			def payloadUrl = json.benchmark."benchmark_url"
+			def payloadUrl      = json.benchmark."benchmark_url"
 
-			def downloadDirname = [DOWNLOAD_BASEPATH, String.valueOf(receivedTimestamp)].join(File.separator)
-			File downloadDir = new File(downloadDirname)
-			if (!downloadDir.exists()) {
-				downloadDir.mkdirs()
-			}
-
-			def downloadFilepath = [downloadDirname, payloadFilename].join(File.separator)
-			File downloadFile = new File(downloadFilepath)
-
-			log.info "Downloading file to ${downloadFilepath}"
-
-			def result = HttpBuilder.configure {
-				request.raw = payloadUrl
-				ignoreSslIssues execution
-			}.get {
-				request.headers.'User-Agent' = 'Mozilla/5.0'
-
-				Download.toFile(delegate, downloadFile)
-
-				response.success { FromServer fs, Object body ->
-					System.console().println "Received ${downloadCategory} content: ${payloadFilename} "
-					" - Content successfully downloaded to ${downloadFilepath}"
+			// DO A LICENSE CHECK
+			boolean verified = DxlUtilities.instance.verifyLicense()
+			if (verified) {
+				def downloadDirname = [DOWNLOAD_BASEPATH, String.valueOf(receivedTimestamp)].join(File.separator)
+				File downloadDir = new File(downloadDirname)
+				if (!downloadDir.exists()) {
+					downloadDir.mkdirs()
 				}
-				response.failure { FromServer fs, Object body ->
-					" - Content FAILED to download: ${fs.statusCode}/${fs.message}"
-				}
+
+				def downloadFilepath = [downloadDirname, payloadFilename].join(File.separator)
+				File downloadFile = new File(downloadFilepath)
+
+				log.info "Downloading file to ${downloadFilepath}"
+
+				def result = HttpBuilder.configure {
+					request.raw = payloadUrl
+					ignoreSslIssues execution
+				}.get {
+					request.headers.'User-Agent' = 'Mozilla/5.0'
+
+					Download.toFile(delegate, downloadFile)
+
+					response.success { FromServer fs, Object body ->
+						System.console().println "Received ${downloadCategory} content: ${payloadFilename} "
+						" - Content successfully downloaded to ${downloadFilepath}"
+					}
+					response.failure { FromServer fs, Object body ->
+						" - Content FAILED to download: ${fs.statusCode}/${fs.message}"
+					}
 //            response.when(200) { FromServer fs ->
 //                " - Content successfully downloaded to ${downloadFilepath}"
 //            }
@@ -81,10 +84,12 @@ class ContentSubscriber {
 //            response.when(500) { FromServer fs ->
 //                " - Content failed to download. Response Status: ${fs.message}"
 //            }
+				}
+				log.info result
+				log.info "Download complete."
+			} else {
+				System.console().println "Application does NOT possess a valid CIS SecureSuite Member Key; Download Failed."
 			}
-
-			log.info result
-			log.info "Download complete."
 		} catch (Exception e) {
 			log.info "Invalid JSON; Payload String is ${payloadString}"
 		}
