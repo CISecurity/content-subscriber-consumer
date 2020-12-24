@@ -12,6 +12,7 @@ repositories {
     maven {
         url "https://repo.spring.io/plugins-release/"
     }
+    maven { url "https://jcenter.bintray.com/" }
 }
 
 def groovyVersion = "3.0.5"
@@ -44,6 +45,9 @@ dependencies {
 
     // https://mvnrepository.com/artifact/io.github.http-builder-ng/http-builder-ng-okhttp
     compile group: 'io.github.http-builder-ng', name: 'http-builder-ng-okhttp', version: '1.0.4'
+
+    // https://mvnrepository.com/artifact/com.burgstaller/okhttp-digest
+    compile group: 'com.burgstaller', name: 'okhttp-digest', version: '2.5'
 
     // https://mvnrepository.com/artifact/org.quartz-scheduler/quartz
     compile group: 'org.quartz-scheduler', name: 'quartz', version: '2.3.2'

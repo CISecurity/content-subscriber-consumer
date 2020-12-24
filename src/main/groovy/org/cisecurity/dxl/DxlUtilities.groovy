@@ -13,6 +13,8 @@ import com.opendxl.client.message.Message
 import com.opendxl.client.message.Request
 import com.opendxl.client.message.Response
 import groovy.json.JsonSlurper
+import groovy.xml.XmlUtil
+import groovy.xml.XmlParser
 import org.quartz.JobBuilder
 import org.quartz.JobDetail
 import org.quartz.Scheduler
@@ -440,19 +442,26 @@ class DxlUtilities {
 
 		log.info "[START] Initiating Member Key Verification Request via DXL"
 		def memberKeyPayload = {
-			File memberKeyFile = new File(memberKeyXml)
-			if (memberKeyFile.exists()) {
-				return memberKeyFile.text
+			def payloadNode
+			def parser = new XmlParser(false, false)
+			parser.setFeature("http://xml.org/sax/features/external-general-entities", false)
+
+			File licenseFile = new File(memberKeyXml)
+			if (licenseFile.exists()) {
+				payloadNode = parser.parse(licenseFile)
 			} else {
-				return "<securesuite_member_license><no_license_file/></securesuite_member_license>"
+				payloadNode = parser.parseText("<securesuite_member_license><no_license_file/></securesuite_member_license>")
 			}
+			payloadNode.appendNode("client_name", "Content Subscriber/Consumer")
+			payloadNode.appendNode("client_version", "0.0.1")
+			return payloadNode
 		}.call()
 
 		// Create the request message
 		final Request req = new Request(LICENSE_TOPIC)
 
 		// Populate the request payload
-		req.setPayload(memberKeyPayload.getBytes(Message.CHARSET_UTF8))
+		req.setPayload(XmlUtil.serialize(memberKeyPayload).getBytes(Message.CHARSET_UTF8))
 
 		log.info "Invoking member key verification request"
 
